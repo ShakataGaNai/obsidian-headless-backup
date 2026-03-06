@@ -6,8 +6,12 @@ VAULT_PATH="/vault"
 GIT_SSH_KEY="${GIT_SSH_KEY_PATH:-/git-ssh/id_ed25519}"
 
 # Configure SSH for git
+# accept-new: trusts on first connect, rejects if the key changes later.
+# Known hosts persist in /vault/.ssh/known_hosts across runs via the PVC.
+KNOWN_HOSTS="/vault/.ssh/known_hosts"
+mkdir -p "$(dirname "$KNOWN_HOSTS")"
 if [[ -f "$GIT_SSH_KEY" ]]; then
-    export GIT_SSH_COMMAND="ssh -i $GIT_SSH_KEY -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+    export GIT_SSH_COMMAND="ssh -i \"$GIT_SSH_KEY\" -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=\"$KNOWN_HOSTS\""
 fi
 
 cd "$VAULT_PATH"
@@ -37,6 +41,9 @@ if [[ ! -d ".git" ]]; then
 
 # Vault backup marker
 .obsidian/.vault-backup-initialized
+
+# SSH known hosts (managed by backup-git.sh)
+.ssh/
 
 # OS junk
 .DS_Store

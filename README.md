@@ -11,83 +11,76 @@ On first run, the container sets up sync configuration (vault link, sync mode, e
 
 ## Prerequisites
 
-- An [Obsidian Sync](https://obsidian.md/sync) subscription
-- A remote vault already created (via the Obsidian desktop/mobile app)
-- Node.js 22+ installed locally (for initial token generation)
-- A git repo for backup storage (GitHub, Gitea, Forgejo, etc.)
-- A deploy key (ed25519) with write access to that repo
+1. An [Obsidian Sync](https://obsidian.md/sync) subscription with a remote vault already created
+2. An **Obsidian auth token** — install `obsidian-headless` locally (`npm install -g obsidian-headless`), run `ob login`, then grab the token from `~/.obsidian-headless/auth_token`. This token grants full access to all vaults on the account — store it securely.
+3. A **git repo** for backup storage with an **SSH deploy key** that has write access
 
-## Getting Your Auth Token
+## Docker Compose
 
 ```bash
-npm install -g obsidian-headless
-ob login
-# Token is stored at ~/.obsidian-headless/auth_token
-cat ~/.obsidian-headless/auth_token
-```
-
-Store this token securely — it grants full access to all vaults on the account.
-
-## Quick Start — Docker Compose
-
-```bash
-# 1. Copy and edit .env
+# 1. Configure
 cp .env.example .env
-# Fill in OBSIDIAN_AUTH_TOKEN, VAULT_NAME, GIT_REMOTE_URL
+# Edit .env — set OBSIDIAN_AUTH_TOKEN, VAULT_NAME, GIT_REMOTE_URL
 
 # 2. Place your deploy key
 mkdir -p git-ssh
 cp /path/to/deploy-key ./git-ssh/id_ed25519
 chmod 600 ./git-ssh/id_ed25519
 
-# 3. Build and run once (test)
+# 3. Run once (test)
 docker compose run --rm obsidian-vault-backup
 
-# 4. For scheduled runs, use host cron:
+# 4. Schedule with host cron
 # crontab -e
 # 0 4 * * * cd /path/to/obsidian-vault-backup && docker compose run --rm obsidian-vault-backup >> /var/log/obsidian-backup.log 2>&1
 ```
 
-Works with Podman too — just use `podman compose` or `podman-compose`.
+Works with Podman too — `podman compose` or `podman-compose`.
 
-## Quick Start — Kubernetes
+## Kubernetes
+
+### 1. Edit the ConfigMap
+
+Open `kubernetes/obsidian-vault-backup.yaml` and edit the ConfigMap with your vault name, git remote URL, schedule, and other settings.
+
+### 2. Create the Secret
+
+Choose **one** of three options:
+
+**Option A — `kubectl create secret` (quickest):**
 
 ```bash
-# 1. Get your auth token (see above)
-
-# 2. Generate a deploy key
-ssh-keygen -t ed25519 -f ./deploy-key -N ""
-# Add deploy-key.pub to your git repo as a deploy key with write access
-
-# 3. Create the secret
-kubectl create namespace obsidian-backup
+kubectl apply -f kubernetes/obsidian-vault-backup.yaml
 kubectl -n obsidian-backup create secret generic obsidian-backup-secrets \
   --from-literal=OBSIDIAN_AUTH_TOKEN="your-token" \
   --from-literal=E2EE_PASSWORD="your-e2ee-password" \
-  --from-file=git-ssh-key=./deploy-key
-
-# 4. Edit kubernetes/base/cronjob.yaml with your values (image, vault name, git URL)
-
-# 5. Apply the manifests
-kubectl apply -k kubernetes/overlays/k8s-secrets/
-
-# 6. Trigger a test run
-kubectl -n obsidian-backup create job --from=cronjob/obsidian-vault-backup test-run
-
-# 7. Watch logs
-kubectl -n obsidian-backup logs -f job/test-run
+  --from-file=git-ssh-key=/path/to/deploy-key
 ```
 
-### 1Password (Kubernetes)
+**Option B — Secret manifest:**
 
-If you use the [1Password Kubernetes Operator](https://github.com/1Password/onepassword-operator):
+Edit `kubernetes/secret.yaml` with your credentials, then:
 
-1. Create a 1Password item at `vaults/HomeLab/items/obsidian-vault-backup` with fields:
-   - `OBSIDIAN_AUTH_TOKEN` — your auth token
-   - `E2EE_PASSWORD` — your E2EE password (omit for standard encryption)
-   - `git-ssh-key` — your SSH private deploy key
-2. Edit the `itemPath` in `kubernetes/overlays/1password/onepassworditem.yaml` if needed
-3. Apply: `kubectl apply -k kubernetes/overlays/1password/`
+```bash
+kubectl apply -f kubernetes/obsidian-vault-backup.yaml
+kubectl apply -f kubernetes/secret.yaml
+```
+
+**Option C — 1Password Operator:**
+
+If you use the [1Password Kubernetes Operator](https://github.com/1Password/onepassword-operator), edit the `itemPath` in `kubernetes/onepassworditem.yaml` to match your 1Password item, then:
+
+```bash
+kubectl apply -f kubernetes/obsidian-vault-backup.yaml
+kubectl apply -f kubernetes/onepassworditem.yaml
+```
+
+### 3. Test
+
+```bash
+kubectl -n obsidian-backup create job --from=cronjob/obsidian-vault-backup test-run
+kubectl -n obsidian-backup logs -f job/test-run
+```
 
 ## Environment Variables
 
@@ -120,25 +113,13 @@ If you use the [1Password Kubernetes Operator](https://github.com/1Password/onep
 
 ## What Gets Backed Up
 
-The git backup includes your vault files and `.obsidian/` configs (plugins, themes, snippets, etc.). It excludes:
-
-- Sync state databases (`*.db`, `sync.json`, `sync-journal/`)
-- The vault-backup marker file
-- OS junk files (`.DS_Store`, `Thumbs.db`)
+The git backup includes your vault files and `.obsidian/` configs (plugins, themes, snippets, etc.). It excludes sync state databases (`*.db`, `sync.json`, `sync-journal/`), the vault-backup marker file, and OS junk files.
 
 ## Changing the Schedule
 
-**Kubernetes:** Edit the `schedule` field in `kubernetes/base/cronjob.yaml`:
-
-- `"0 4 * * *"` — daily at 4:00 AM
-- `"0 */6 * * *"` — every 6 hours
-- `"*/30 * * * *"` — every 30 minutes
+**Kubernetes:** Edit the `schedule` field in `kubernetes/obsidian-vault-backup.yaml`. Standard cron syntax — `"0 4 * * *"` (daily 4am), `"0 */6 * * *"` (every 6h), `"*/30 * * * *"` (every 30min).
 
 **Docker Compose:** Edit your host crontab entry.
-
-## Multi-Vault Support
-
-Deploy separate instances (CronJob + PVC per vault). Each needs its own `VAULT_NAME`, `E2EE_PASSWORD` (if different), and optionally different git repos or branches.
 
 ## Persistent Storage
 
@@ -146,7 +127,11 @@ A single PVC mounted at `/vault` stores both vault files and Obsidian sync state
 
 **Sizing:** Text-only vaults need ~1Gi. Vaults with attachments (images, PDFs) may need 5-10Gi+. E2EE vaults sync the entire vault every time — plan accordingly.
 
-**Storage backend:** Avoid NFS-backed PVCs — SQLite (used by obsidian-headless for sync state) has locking issues on NFS. Use local-path or block storage.
+**Storage backend:** Avoid NFS-backed PVCs — SQLite has locking issues on NFS. Use local-path or block storage.
+
+## Multi-Vault Support
+
+Deploy separate instances (CronJob + PVC per vault). Each needs its own `VAULT_NAME`, `E2EE_PASSWORD` (if different), and optionally different git repos or branches.
 
 ## Security Notes
 

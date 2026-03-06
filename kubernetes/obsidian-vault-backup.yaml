@@ -1,3 +1,44 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: obsidian-backup
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: obsidian-vault
+  namespace: obsidian-backup
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+  # storageClassName: local-path  # k3s default — uncomment or set to your SC
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: obsidian-backup-config
+  namespace: obsidian-backup
+data:
+  VAULT_NAME: "My Vault"
+  SYNC_MODE: "mirror-remote"
+  # SYNC_FILE_TYPES: "image,audio,video,pdf,unsupported"
+  # SYNC_CONFIGS: ""
+  # SYNC_EXCLUDED_FOLDERS: ""
+  # CONFLICT_STRATEGY: "merge"
+  # DEVICE_NAME: "vault-backup"
+  # CONFIG_DIR: ".obsidian"
+  BACKUP_PROVIDER: "git"
+  GIT_REMOTE_URL: "git@github.com:YOURORG/obsidian-vault-backup-data.git"
+  GIT_BRANCH: "main"
+  # GIT_COMMIT_MESSAGE: "vault backup %DATE%"
+  # GIT_AUTHOR_NAME: "Obsidian Vault Backup"
+  # GIT_AUTHOR_EMAIL: "vault-backup@noreply"
+  TZ: "America/Los_Angeles"
+---
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -19,26 +60,22 @@ spec:
             runAsUser: 1000
             runAsGroup: 1000
             fsGroup: 1000
+            runAsNonRoot: true
           containers:
             - name: vault-backup
-              image: ghcr.io/YOURORG/obsidian-vault-backup:latest
+              image: ghcr.io/shakataganai/obsidian-headless-backup:latest
               imagePullPolicy: IfNotPresent
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop:
+                    - ALL
               envFrom:
+                - configMapRef:
+                    name: obsidian-backup-config
                 - secretRef:
                     name: obsidian-backup-secrets
-              env:
-                - name: VAULT_NAME
-                  value: "My Vault"
-                - name: SYNC_MODE
-                  value: "mirror-remote"
-                - name: BACKUP_PROVIDER
-                  value: "git"
-                - name: GIT_REMOTE_URL
-                  value: "git@github.com:YOURORG/obsidian-vault-backup-data.git"
-                - name: GIT_BRANCH
-                  value: "main"
-                - name: TZ
-                  value: "America/Los_Angeles"
               volumeMounts:
                 - name: vault-data
                   mountPath: /vault

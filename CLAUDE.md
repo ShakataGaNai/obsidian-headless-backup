@@ -10,9 +10,9 @@ scripts/entrypoint.sh                   # Main orchestration: env validation, fi
 scripts/backup-git.sh                   # Git backup provider: init, commit-on-change, push
 docker-compose.yaml                     # Single service with named volume
 .env.example                            # All env vars documented
-kubernetes/base/                        # Namespace, PVC, CronJob, kustomization
-kubernetes/overlays/k8s-secrets/        # Standard K8s Secret + kustomization
-kubernetes/overlays/1password/          # OnePasswordItem + kustomization
+kubernetes/obsidian-vault-backup.yaml   # Namespace + PVC + ConfigMap + CronJob (always apply)
+kubernetes/secret.yaml                  # Secret template (option A for secrets)
+kubernetes/onepassworditem.yaml         # 1Password operator alternative (option B for secrets)
 ```
 
 ## Key Design Decisions
@@ -44,8 +44,7 @@ podman run --rm obsidian-vault-backup
 podman run --rm --entrypoint id obsidian-vault-backup
 
 # Validate K8s manifests
-kubectl kustomize kubernetes/overlays/k8s-secrets/
-kubectl kustomize kubernetes/overlays/1password/
+kubectl apply --dry-run=client -f kubernetes/obsidian-vault-backup.yaml
 ```
 
 ## Environment Variables
@@ -56,6 +55,7 @@ Required: `OBSIDIAN_AUTH_TOKEN`, `VAULT_NAME`. See `.env.example` for full list 
 
 ## Kubernetes
 
-- Both overlays include base resources (namespace, PVC, CronJob) plus their secret mechanism.
+- Flat structure, no kustomize. Single main manifest + pick one secret mechanism.
+- Non-secret config lives in a ConfigMap, not inline env vars on the CronJob.
 - The CronJob's pod security context sets `runAsUser/runAsGroup/fsGroup: 1000`.
 - SSH key is mounted from the secret at `/git-ssh/id_ed25519` with mode 0400.

@@ -2,7 +2,7 @@ services:
   obsidian-vault-backup:
     build: .
     # Or use a prebuilt image:
-    # image: ghcr.io/YOURORG/obsidian-vault-backup:latest
+    # image: ghcr.io/shakataganai/obsidian-headless-backup:latest
     env_file:
       - .env
     volumes:
