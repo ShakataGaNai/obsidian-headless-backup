@@ -1,0 +1,15 @@
+# Secrets — never commit
+.env
+git-ssh/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Editor
+*.swp
+*.swo
+*~

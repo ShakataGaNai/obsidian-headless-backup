@@ -1,0 +1,65 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: obsidian-vault-backup
+  namespace: obsidian-backup
+spec:
+  schedule: "0 4 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 1800
+      template:
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+            fsGroup: 1000
+          containers:
+            - name: vault-backup
+              image: ghcr.io/YOURORG/obsidian-vault-backup:latest
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - secretRef:
+                    name: obsidian-backup-secrets
+              env:
+                - name: VAULT_NAME
+                  value: "My Vault"
+                - name: SYNC_MODE
+                  value: "mirror-remote"
+                - name: BACKUP_PROVIDER
+                  value: "git"
+                - name: GIT_REMOTE_URL
+                  value: "git@github.com:YOURORG/obsidian-vault-backup-data.git"
+                - name: GIT_BRANCH
+                  value: "main"
+                - name: TZ
+                  value: "America/Los_Angeles"
+              volumeMounts:
+                - name: vault-data
+                  mountPath: /vault
+                - name: git-ssh
+                  mountPath: /git-ssh
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+          volumes:
+            - name: vault-data
+              persistentVolumeClaim:
+                claimName: obsidian-vault
+            - name: git-ssh
+              secret:
+                secretName: obsidian-backup-secrets
+                items:
+                  - key: git-ssh-key
+                    path: id_ed25519
+                    mode: 0400

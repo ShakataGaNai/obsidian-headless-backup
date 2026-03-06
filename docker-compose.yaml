@@ -1,0 +1,14 @@
+services:
+  obsidian-vault-backup:
+    build: .
+    # Or use a prebuilt image:
+    # image: ghcr.io/YOURORG/obsidian-vault-backup:latest
+    env_file:
+      - .env
+    volumes:
+      - vault-data:/vault
+      - ./git-ssh/id_ed25519:/git-ssh/id_ed25519:ro
+
+# Named volume persists vault + sync state between runs
+volumes:
+  vault-data:
