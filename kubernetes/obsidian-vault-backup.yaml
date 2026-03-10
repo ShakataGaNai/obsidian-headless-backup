@@ -64,7 +64,7 @@ spec:
           containers:
             - name: vault-backup
               image: ghcr.io/shakataganai/obsidian-headless-backup:latest
-              imagePullPolicy: IfNotPresent
+              imagePullPolicy: Always
               securityContext:
                 allowPrivilegeEscalation: false
                 readOnlyRootFilesystem: true
@@ -82,6 +82,10 @@ spec:
                 - name: git-ssh
                   mountPath: /git-ssh
                   readOnly: true
+                - name: tmp
+                  mountPath: /tmp
+                - name: home
+                  mountPath: /home/node
               resources:
                 requests:
                   cpu: 100m
@@ -97,6 +101,10 @@ spec:
               secret:
                 secretName: obsidian-backup-secrets
                 items:
-                  - key: git-ssh-key
+                  - key: id_ed25519
                     path: id_ed25519
                     mode: 0400
+            - name: tmp
+              emptyDir: {}
+            - name: home
+              emptyDir: {}

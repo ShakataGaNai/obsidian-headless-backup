@@ -21,8 +21,10 @@ kubernetes/onepassworditem.yaml         # 1Password operator alternative (option
 - **Uses `node` user (UID 1000)** from `node:22-alpine` base image — don't create a custom user.
 - **`obsidian-headless` pinned to 0.0.6** via Dockerfile build arg. Tool is very new; pin deliberately.
 - **First-run detection** uses marker file at `/vault/.obsidian/.vault-backup-initialized`.
-- **Git backup** only commits when files actually changed. `.gitignore` in the vault excludes sync state DBs but includes `.obsidian/` configs.
+- **Git backup** only commits and pushes when files actually changed. `.gitignore` in the vault excludes sync state DBs but includes `.obsidian/` configs.
 - **Backup provider pattern** — `scripts/backup-<provider>.sh` sourced by entrypoint. Currently only `git`; `s3` and `rsync` are stubbed.
+- **Sync timeout** defaults to 600s (10 min) via `SYNC_TIMEOUT` env var to prevent indefinite hangs.
+- **Healthcheck ping** — optional `HEALTHCHECK_URL` env var pings a dead man's switch service on success.
 
 ## Working With Shell Scripts
 
@@ -58,4 +60,6 @@ Required: `OBSIDIAN_AUTH_TOKEN`, `VAULT_NAME`. See `.env.example` for full list 
 - Flat structure, no kustomize. Single main manifest + pick one secret mechanism.
 - Non-secret config lives in a ConfigMap, not inline env vars on the CronJob.
 - The CronJob's pod security context sets `runAsUser/runAsGroup/fsGroup: 1000`.
+- SSH key secret uses key name `id_ed25519` (matches natural `kubectl create secret --from-file` behavior).
 - SSH key is mounted from the secret at `/git-ssh/id_ed25519` with mode 0400.
+- `readOnlyRootFilesystem: true` requires `emptyDir` volumes for `/tmp` and `/home/node`.

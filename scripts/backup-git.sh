@@ -26,7 +26,6 @@ fi
 if [[ ! -d ".git" ]]; then
     log "[git] Initializing git repo..."
     git init -b "${GIT_BRANCH:-main}"
-    git remote add origin "${GIT_REMOTE_URL}"
 
     # Create .gitignore for obsidian internal state
     # We DO want to back up .obsidian/ configs (plugins, themes, etc)
@@ -49,7 +48,11 @@ if [[ ! -d ".git" ]]; then
 .DS_Store
 Thumbs.db
 GITIGNORE
+fi
 
+# Ensure remote is configured (handles partial-init recovery)
+if ! git remote get-url origin &>/dev/null; then
+    git remote add origin "${GIT_REMOTE_URL}"
     log "[git] Git repo initialized with remote: ${GIT_REMOTE_URL}"
 fi
 
@@ -70,9 +73,7 @@ if git diff --cached --quiet; then
 else
     git commit -m "$MSG"
     log "[git] Committed changes."
+    log "[git] Pushing to ${GIT_BRANCH:-main}..."
+    git push -u origin "${GIT_BRANCH:-main}"
+    log "[git] Push complete."
 fi
-
-# Push
-log "[git] Pushing to ${GIT_BRANCH:-main}..."
-git push -u origin "${GIT_BRANCH:-main}"
-log "[git] Push complete."

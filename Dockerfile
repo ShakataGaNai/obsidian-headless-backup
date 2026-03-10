@@ -8,6 +8,7 @@ RUN npm install -g obsidian-headless@${OB_HEADLESS_VERSION} \
         git \
         openssh-client \
         bash \
+        curl \
         tzdata
 
 # Use existing node user (UID 1000) as non-root user

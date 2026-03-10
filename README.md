@@ -54,7 +54,7 @@ kubectl apply -f kubernetes/obsidian-vault-backup.yaml
 kubectl -n obsidian-backup create secret generic obsidian-backup-secrets \
   --from-literal=OBSIDIAN_AUTH_TOKEN="your-token" \
   --from-literal=E2EE_PASSWORD="your-e2ee-password" \
-  --from-file=git-ssh-key=/path/to/deploy-key
+  --from-file=id_ed25519=/path/to/deploy-key
 ```
 
 **Option B — Secret manifest:**
@@ -103,6 +103,8 @@ kubectl -n obsidian-backup logs -f job/test-run
 | `GIT_AUTHOR_NAME` | no | `Obsidian Vault Backup` | Git author name |
 | `GIT_AUTHOR_EMAIL` | no | `vault-backup@noreply` | Git author email |
 | `GIT_SSH_KEY_PATH` | no | `/git-ssh/id_ed25519` | Path to SSH private key for git push |
+| `SYNC_TIMEOUT` | no | `600` | Sync timeout in seconds (10 min default) |
+| `HEALTHCHECK_URL` | no | — | URL to ping on successful completion (Healthchecks.io, Uptime Kuma, etc.) |
 | `TZ` | no | `UTC` | Timezone for commit timestamps |
 
 ## Sync Modes
@@ -132,6 +134,12 @@ A single PVC mounted at `/vault` stores both vault files and Obsidian sync state
 ## Multi-Vault Support
 
 Deploy separate instances (CronJob + PVC per vault). Each needs its own `VAULT_NAME`, `E2EE_PASSWORD` (if different), and optionally different git repos or branches.
+
+## Monitoring
+
+The container exits non-zero on failure, which integrates with Kubernetes job monitoring (`kube_cronjob_status_last_successful_time` via Prometheus/kube-state-metrics).
+
+For lightweight monitoring without a full Prometheus stack, set `HEALTHCHECK_URL` to a dead man's switch service (Healthchecks.io, Uptime Kuma, Betterstack, Cronitor). The container pings the URL after a successful backup — if the ping stops arriving, the service alerts you.
 
 ## Security Notes
 

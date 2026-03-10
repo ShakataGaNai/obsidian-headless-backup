@@ -37,13 +37,14 @@ if [[ ! -f "$FIRST_RUN_MARKER" ]]; then
     [[ -n "${SYNC_EXCLUDED_FOLDERS:-}" ]] && sync_config_args+=(--excluded-folders "$SYNC_EXCLUDED_FOLDERS")
     ob sync-config "${sync_config_args[@]}"
 
+    mkdir -p "$VAULT_PATH/.obsidian"
     touch "$FIRST_RUN_MARKER"
     log "[init] Setup complete."
 fi
 
 # ── Sync ──────────────────────────────────────────
 log "[sync] Starting Obsidian Sync..."
-ob sync --path "$VAULT_PATH"
+timeout "${SYNC_TIMEOUT:-600}" ob sync --path "$VAULT_PATH"
 log "[sync] Sync complete."
 
 # ── Backup ────────────────────────────────────────
@@ -71,3 +72,10 @@ case "$BACKUP_PROVIDER" in
 esac
 
 log "[done] Vault backup complete."
+
+# ── Healthcheck ping ─────────────────────────────
+if [[ -n "${HEALTHCHECK_URL:-}" ]]; then
+    if ! curl -fsS --max-time 10 "$HEALTHCHECK_URL" >/dev/null 2>&1; then
+        log "[warn] Healthcheck ping to $HEALTHCHECK_URL failed."
+    fi
+fi
