@@ -16,6 +16,9 @@ fi
 
 cd "$VAULT_PATH"
 
+# PVC mounts are owned by root; git 2.35.2+ rejects this as "dubious ownership"
+git config --global --add safe.directory "$VAULT_PATH"
+
 # Validate git remote URL
 if [[ -z "${GIT_REMOTE_URL:-}" ]]; then
     log "[error] GIT_REMOTE_URL is not set. Required when BACKUP_PROVIDER=git."
