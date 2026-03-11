@@ -43,6 +43,18 @@ if [[ ! -f "$FIRST_RUN_MARKER" ]]; then
 fi
 
 # ── Sync ──────────────────────────────────────────
+# Work around stale sync lock left by sync-setup or previous hard-killed syncs.
+# obsidian-headless uses an mtime-based lock at .obsidian/.sync.lock that can
+# fail to release due to an mtime race condition. The lock expires after 5s,
+# but back-to-back commands hit it before expiry.
+# See: https://github.com/obsidianmd/obsidian-headless/issues/4
+SYNC_LOCK="$VAULT_PATH/.obsidian/.sync.lock"
+if [[ -d "$SYNC_LOCK" ]]; then
+    log "[sync] Removing stale sync lock."
+    rm -rf "$SYNC_LOCK"
+fi
+sleep 5
+
 log "[sync] Starting Obsidian Sync..."
 timeout "${SYNC_TIMEOUT:-600}" ob sync --path "$VAULT_PATH"
 log "[sync] Sync complete."

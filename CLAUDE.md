@@ -2,6 +2,13 @@
 
 Containerized tool that syncs an Obsidian vault via `obsidian-headless` CLI and backs it up to git. Runs as a one-shot container for Kubernetes CronJobs or Docker Compose with host cron.
 
+## Upstream
+
+- **obsidian-headless**: https://github.com/obsidianmd/obsidian-headless (by lishid)
+- **npm**: `obsidian-headless` (pinned to 0.0.6)
+- **Official docs**: https://help.obsidian.md/sync/headless
+- **Known issue — stale sync lock**: https://github.com/obsidianmd/obsidian-headless/issues/4
+
 ## Project Structure
 
 ```
