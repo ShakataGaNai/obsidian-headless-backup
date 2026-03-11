@@ -43,6 +43,15 @@ elif [[ "$current_remote" != "${GIT_REMOTE_URL}" ]]; then
     log "[git] Updated remote: ${current_remote} → ${GIT_REMOTE_URL}"
 fi
 
+# If local repo has no commits but remote does (fresh PVC, disaster recovery),
+# fetch remote history so push is a fast-forward instead of rejected.
+if ! git rev-parse HEAD &>/dev/null; then
+    if git fetch origin "${GIT_BRANCH:-main}" 2>/dev/null; then
+        git reset --hard "origin/${GIT_BRANCH:-main}"
+        log "[git] Resumed from existing remote history."
+    fi
+fi
+
 # Ensure .gitignore exists (covers fresh init, pre-existing repos, and manual deletion)
 if [[ ! -f ".gitignore" ]]; then
     cat > .gitignore <<'GITIGNORE'
