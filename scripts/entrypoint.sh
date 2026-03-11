@@ -59,6 +59,11 @@ log "[sync] Starting Obsidian Sync..."
 timeout "${SYNC_TIMEOUT:-600}" ob sync --path "$VAULT_PATH"
 log "[sync] Sync complete."
 
+# Clean up sync lock left by ob sync (same upstream bug as pre-sync cleanup)
+if [[ -d "$SYNC_LOCK" ]]; then
+    rm -rf "$SYNC_LOCK"
+fi
+
 # ── Backup ────────────────────────────────────────
 BACKUP_PROVIDER="${BACKUP_PROVIDER:-git}"
 

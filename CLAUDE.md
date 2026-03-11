@@ -69,4 +69,4 @@ Required: `OBSIDIAN_AUTH_TOKEN`, `VAULT_NAME`. See `.env.example` for full list 
 - The CronJob's pod security context sets `runAsUser/runAsGroup/fsGroup: 1000`.
 - SSH key secret uses key name `id_ed25519` (matches natural `kubectl create secret --from-file` behavior).
 - SSH key is mounted from the secret at `/git-ssh/id_ed25519` with mode 0400.
-- `readOnlyRootFilesystem: true` requires `emptyDir` volumes for `/tmp` and `/home/node`.
+- **No `readOnlyRootFilesystem`** — `obsidian-headless` writes to `~/.config/obsidian-headless/`, git needs `~/.gitconfig`, Node.js needs home dir. Security comes from non-root + no privilege escalation + dropped capabilities.
