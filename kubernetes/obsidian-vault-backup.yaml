@@ -61,6 +61,11 @@ spec:
             runAsGroup: 1000
             fsGroup: 1000
             runAsNonRoot: true
+            sysctls:
+              - name: fs.inotify.max_user_instances
+                value: "1024"
+              - name: fs.inotify.max_user_watches
+                value: "524288"
           containers:
             - name: vault-backup
               image: ghcr.io/shakataganai/obsidian-headless-backup:latest
