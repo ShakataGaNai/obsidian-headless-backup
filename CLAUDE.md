@@ -61,6 +61,7 @@ kubectl apply --dry-run=client -f kubernetes/obsidian-vault-backup.yaml
 - **Releases use CalVer**: `YYYY.0W.0` — four-digit year, zero-padded ISO week number, patch counter. Example: `2026.36.0`.
 - Bump the patch counter (third component) for additional releases cut in the same ISO week; otherwise it stays `0`.
 - Tag releases as `vYYYY.0W.0` (e.g. `v2026.36.0`) and cut a GitHub release with notes on what changed (upstream bumps, script fixes, manifest changes).
+- Record every release in `CHANGELOG.md` (Keep a Changelog style) before tagging.
 
 ## Environment Variables
 
