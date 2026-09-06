@@ -1,5 +1,10 @@
 # obsidian-vault-backup
 
+[![Build and Push Container Image](https://img.shields.io/github/actions/workflow/status/ShakataGaNai/obsidian-headless-backup/build.yaml?branch=main&label=build)](https://github.com/ShakataGaNai/obsidian-headless-backup/actions/workflows/build.yaml)
+[![Latest release](https://img.shields.io/github/v/release/ShakataGaNai/obsidian-headless-backup?label=release)](https://github.com/ShakataGaNai/obsidian-headless-backup/releases/latest)
+[![obsidian-headless](https://img.shields.io/badge/obsidian--headless-0.0.14-blue)](https://github.com/obsidianmd/obsidian-headless/releases/tag/0.0.14)
+[![License: MIT](https://img.shields.io/github/license/ShakataGaNai/obsidian-headless-backup)](LICENSE)
+
 Containerized tool that syncs an [Obsidian](https://obsidian.md) vault via the official [`obsidian-headless`](https://github.com/obsidianmd/obsidian-headless) CLI and backs it up to git. Designed for Kubernetes CronJobs or Docker Compose.
 
 ## How It Works
