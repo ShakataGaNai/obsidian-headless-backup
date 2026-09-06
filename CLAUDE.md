@@ -5,14 +5,14 @@ Containerized tool that syncs an Obsidian vault via `obsidian-headless` CLI and 
 ## Upstream
 
 - **obsidian-headless**: https://github.com/obsidianmd/obsidian-headless (by lishid)
-- **npm**: `obsidian-headless` (pinned to 0.0.6)
+- **npm**: `obsidian-headless` (pinned to 0.0.14)
 - **Official docs**: https://help.obsidian.md/sync/headless
 - **Known issue — stale sync lock**: https://github.com/obsidianmd/obsidian-headless/issues/4
 
 ## Project Structure
 
 ```
-Dockerfile                              # node:22-alpine, obsidian-headless@0.0.6, non-root (node, UID 1000)
+Dockerfile                              # node:22-alpine, obsidian-headless@0.0.14, non-root (node, UID 1000)
 scripts/entrypoint.sh                   # Main orchestration: env validation, first-run setup, sync, backup dispatch
 scripts/backup-git.sh                   # Git backup provider: init, commit-on-change, push
 docker-compose.yaml                     # Single service with named volume
@@ -26,7 +26,7 @@ kubernetes/onepassworditem.yaml         # 1Password operator alternative (option
 
 - **One-shot mode only** — no internal cron/scheduler. K8s CronJob or host cron handles scheduling.
 - **Uses `node` user (UID 1000)** from `node:22-alpine` base image — don't create a custom user.
-- **`obsidian-headless` pinned to 0.0.6** via Dockerfile build arg. Tool is very new; pin deliberately.
+- **`obsidian-headless` pinned to 0.0.14** via Dockerfile build arg. Tool is very new; pin deliberately.
 - **First-run detection** uses marker file at `/vault/.obsidian/.vault-backup-initialized`.
 - **Git backup** only commits and pushes when files actually changed. `.gitignore` in the vault excludes sync state DBs but includes `.obsidian/` configs.
 - **Backup provider pattern** — `scripts/backup-<provider>.sh` sourced by entrypoint. Currently only `git`; `s3` and `rsync` are stubbed.
@@ -55,6 +55,12 @@ podman run --rm --entrypoint id obsidian-vault-backup
 # Validate K8s manifests
 kubectl apply --dry-run=client -f kubernetes/obsidian-vault-backup.yaml
 ```
+
+## Versioning
+
+- **Releases use CalVer**: `YYYY.0W.0` — four-digit year, zero-padded ISO week number, patch counter. Example: `2026.36.0`.
+- Bump the patch counter (third component) for additional releases cut in the same ISO week; otherwise it stays `0`.
+- Tag releases as `vYYYY.0W.0` (e.g. `v2026.36.0`) and cut a GitHub release with notes on what changed (upstream bumps, script fixes, manifest changes).
 
 ## Environment Variables
 

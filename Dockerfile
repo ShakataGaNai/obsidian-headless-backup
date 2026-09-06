@@ -1,7 +1,7 @@
 FROM node:22-alpine
 
 # Pin the version — this tool is brand new, expect breaking changes
-ARG OB_HEADLESS_VERSION=0.0.12
+ARG OB_HEADLESS_VERSION=0.0.14
 
 RUN npm install -g obsidian-headless@${OB_HEADLESS_VERSION} \
     && apk add --no-cache \
