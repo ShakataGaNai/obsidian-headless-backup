@@ -1,0 +1,24 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "packageRules": [
+    {
+      "description": "obsidian-headless is pinned in Dockerfile (ARG OB_HEADLESS_VERSION=x.y.z) via a custom regex, not an npm manifest. Track it with the npm datasource so every upstream release opens a PR bumping the pin. CalVer releases: merging a bump triggers CI, which rebuilds ghcr.io/shakataganai/obsidian-headless-backup (main + :latest), and the matching CalVer tag must be published manually (the v tag also rebuilds with deterministic content and re-tags). Manual merge - this backs up Jon's notes.",
+      "matchFileNames": ["Dockerfile"],
+      "matchDepNames": ["obsidian-headless"],
+      "datasource": "npm",
+      "automerge": false
+    }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "ARG\\\\s+OB_HEADLESS_VERSION=(?<currentValue>\\\\d+\\\\.\\\\d+\\\\.\\\\d+)"
+      ],
+      "depNameTemplate": "obsidian-headless"
+    }
+  ]
+}
